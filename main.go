@@ -9,7 +9,13 @@ import (
 
 func main() {
 
-	config := config.Config{Projects: []string{os.Getenv("GCP_PROJECT_ID")}}
+	config := config.Config{Project: os.Getenv("GCP_PROJECT_ID")}
+
+	// Behaviour to delete one project at a time - will be made into loop later
+	removeProject(config)
+}
+
+func removeProject(config config.Config) {
 	resourceMap := gcp.GetResourceMap(config)
 
 	for _, resource := range resourceMap {
@@ -23,13 +29,9 @@ func recursiveDeletion(resourceMap map[string]gcp.Resource, resource gcp.Resourc
 
 	if len(resource.Dependencies()) > 0 {
 		for _, dependency := range resource.Dependencies() {
-			dependencyResource := resourceMap[dependency]
-			if len(dependencyResource.List()) > 0 {
-				recursiveDeletion(resourceMap, dependencyResource)
-			} else {
-				dependencyResource.Remove()
-			}
+			recursiveDeletion(resourceMap, resourceMap[dependency])
 		}
 	}
 	resource.Remove()
+
 }

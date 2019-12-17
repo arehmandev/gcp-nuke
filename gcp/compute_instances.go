@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/arehmandev/gcp-nuke/config"
+	"github.com/arehmandev/gcp-nuke/helpers"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/compute/v1"
 )
@@ -13,7 +14,6 @@ type ComputeInstances struct {
 	resourceNames []string
 	serviceClient *compute.Service
 	config        config.Config
-	removed       bool
 }
 
 func init() {
@@ -41,29 +41,26 @@ func (c *ComputeInstances) Setup(config config.Config) {
 	log.Println("[Setup] Getting list for", c.Name())
 	c.config = config
 	c.List()
-	if len(c.resourceNames) == 0 {
-		c.removed = true
-	}
 }
 
 // List - Returns a list of all ComputeInstances
 func (c *ComputeInstances) List() []string {
-	for _, project := range c.config.Projects {
-		zoneListCall := c.serviceClient.Zones.List(project)
-		zoneList, err := zoneListCall.Do()
+	zoneListCall := c.serviceClient.Zones.List(c.config.Project)
+	zoneList, err := zoneListCall.Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, zone := range zoneList.Items {
+
+		instanceListCall := c.serviceClient.Instances.List(c.config.Project, zone.Name)
+		instanceList, err := instanceListCall.Do()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		for _, zone := range zoneList.Items {
-
-			instanceListCall := c.serviceClient.Instances.List(project, zone.Name)
-			instanceList, err := instanceListCall.Do()
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			for _, instance := range instanceList.Items {
+		for _, instance := range instanceList.Items {
+			if !helpers.SliceContains(c.resourceNames, instance.Name) {
 				c.resourceNames = append(c.resourceNames, instance.Name)
 			}
 		}
@@ -78,11 +75,11 @@ func (c *ComputeInstances) Dependencies() []string {
 
 // Remove -
 func (c *ComputeInstances) Remove() error {
-	if c.removed {
+	if len(c.resourceNames) == 0 {
 		return nil
 	}
 	log.Println("[Remove] Removing", c.Name(), "items:", c.List())
 	// Removal logic
-	c.removed = true
+	c.resourceNames = []string{}
 	return nil
 }
