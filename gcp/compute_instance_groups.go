@@ -46,7 +46,7 @@ func (c *ComputeInstanceGroups) List(refreshCache bool) []string {
 	if !refreshCache {
 		return c.base.resourceNames
 	}
-	log.Println("Retrieving list of resources for", c.Name())
+	log.Println("[Info] Retrieving list of resources for", c.Name())
 	for _, zone := range c.base.config.Zones {
 		instanceListCall := c.serviceClient.InstanceGroups.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()

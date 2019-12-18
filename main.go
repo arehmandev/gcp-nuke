@@ -54,7 +54,6 @@ func removeProject(config config.Config) {
 
 func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.Resource, dependencyTimeout int) error {
 	refreshCache := false
-	log.Println("[Info] Retrieving resource list for resource:", resource.Name())
 	if len(resource.List(false)) == 0 {
 		log.Println("[Skipping] No", resource.Name(), "items to delete")
 		return nil
