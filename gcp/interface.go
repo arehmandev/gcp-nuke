@@ -7,6 +7,13 @@ import (
 	"github.com/arehmandev/gcp-nuke/config"
 )
 
+// ResourceBase -
+type ResourceBase struct {
+	resourceNames []string
+	config        config.Config
+	cache         bool
+}
+
 // Resource -
 type Resource interface {
 	Name() string
