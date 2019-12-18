@@ -9,3 +9,12 @@ func SliceContains(inputList []string, input string) bool {
 	}
 	return false
 }
+
+// MapKeys -
+func MapKeys(input map[string]string) []string {
+	keys := []string{}
+	for k := range input {
+		keys = append(keys, k)
+	}
+	return keys
+}

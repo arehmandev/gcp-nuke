@@ -38,13 +38,14 @@ func (c *ComputeDisks) Name() string {
 // Setup - populates the struct
 func (c *ComputeDisks) Setup(config config.Config) {
 	c.base.config = config
+	c.base.resourceMap = make(map[string]string)
 	c.List(true)
 }
 
 // List - Returns a list of all ComputeDisks
 func (c *ComputeDisks) List(refreshCache bool) []string {
 	if !refreshCache {
-		return c.base.resourceNames
+		return helpers.MapKeys(c.base.resourceMap)
 	}
 	log.Println("[Info] Retrieving list of resources for", c.Name())
 	for _, zone := range c.base.config.Zones {
@@ -55,12 +56,10 @@ func (c *ComputeDisks) List(refreshCache bool) []string {
 		}
 
 		for _, instance := range instanceList.Items {
-			if !helpers.SliceContains(c.base.resourceNames, instance.Name) {
-				c.base.resourceNames = append(c.base.resourceNames, instance.Name)
-			}
+			c.base.resourceMap[instance.Name] = zone
 		}
 	}
-	return c.base.resourceNames
+	return helpers.MapKeys(c.base.resourceMap)
 }
 
 // Dependencies - Returns a List of resource names to check for
@@ -74,6 +73,6 @@ func (c *ComputeDisks) Dependencies() []string {
 // Remove -
 func (c *ComputeDisks) Remove() error {
 	// Removal logic
-	c.base.resourceNames = []string{}
+	c.base.resourceMap = make(map[string]string)
 	return nil
 }

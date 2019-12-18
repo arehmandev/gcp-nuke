@@ -11,8 +11,9 @@ import (
 
 // ResourceBase -
 type ResourceBase struct {
-	resourceNames []string
-	config        config.Config
+	// resourceId -> projectId
+	resourceMap map[string]string
+	config      config.Config
 }
 
 // Resource -
