@@ -19,7 +19,7 @@ type ResourceBase struct {
 type Resource interface {
 	Name() string
 	Setup(config config.Config)
-	List() []string
+	List(useCache bool) []string
 	Dependencies() []string
 	Remove() error
 }

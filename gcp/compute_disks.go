@@ -38,10 +38,15 @@ func (c *ComputeDisks) Name() string {
 // Setup - populates the struct
 func (c *ComputeDisks) Setup(config config.Config) {
 	c.base.config = config
+	c.List(true)
 }
 
 // List - Returns a list of all ComputeDisks
-func (c *ComputeDisks) List() []string {
+func (c *ComputeDisks) List(refreshCache bool) []string {
+	if !refreshCache {
+		return c.base.resourceNames
+	}
+	log.Println("Retrieving list of resources for", c.Name())
 	for _, zone := range c.base.config.Zones {
 		instanceListCall := c.serviceClient.Disks.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()

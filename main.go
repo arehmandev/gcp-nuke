@@ -53,8 +53,9 @@ func removeProject(config config.Config) {
 }
 
 func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.Resource, dependencyTimeout int) error {
+	refreshCache := false
 	log.Println("[Info] Retrieving resource list for resource:", resource.Name())
-	if len(resource.List()) == 0 {
+	if len(resource.List(false)) == 0 {
 		log.Println("[Skipping] No", resource.Name(), "items to delete")
 		return nil
 	}
@@ -69,16 +70,20 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 			return fmt.Errorf("[Error] Resource %v timed out whilst waiting for dependency %v to delete. Time waited: %v", resource, dependencyResourceName, dependencyTimeout)
 		}
 		dependencyResource := resourceMap[dependencyResourceName]
-		if len(dependencyResource.List()) != 0 {
+		if len(dependencyResource.List(false)) != 0 {
+			refreshCache = true
 			time.Sleep(time.Duration(pollTime) * time.Second)
 			seconds += pollTime
 			log.Printf("[Waiting] Resource %v waiting for dependency %v to delete. Time waited: %v\n", resource.Name(), dependencyResource.Name(), seconds)
 		} else {
-			log.Println("[Skipping] No", dependencyResource.Name(), "items to delete")
 			break
 		}
 	}
 
-	log.Println("[Remove] Removing", resource.Name(), "items:", resource.List())
+	if refreshCache {
+		resource.List(refreshCache)
+	}
+
+	log.Println("[Remove] Removing", resource.Name(), "items:", resource.List(false))
 	return resource.Remove()
 }

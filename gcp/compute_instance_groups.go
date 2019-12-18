@@ -38,11 +38,15 @@ func (c *ComputeInstanceGroups) Name() string {
 // Setup - populates the struct
 func (c *ComputeInstanceGroups) Setup(config config.Config) {
 	c.base.config = config
+	c.List(true)
 }
 
 // List - Returns a list of all ComputeInstanceGroups
-func (c *ComputeInstanceGroups) List() []string {
-
+func (c *ComputeInstanceGroups) List(refreshCache bool) []string {
+	if !refreshCache {
+		return c.base.resourceNames
+	}
+	log.Println("Retrieving list of resources for", c.Name())
 	for _, zone := range c.base.config.Zones {
 		instanceListCall := c.serviceClient.InstanceGroups.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()
