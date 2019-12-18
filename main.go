@@ -14,13 +14,16 @@ import (
 
 func main() {
 
-	config := config.Config{
-		Project: os.Getenv("GCP_PROJECT_ID"),
-		Timeout: 90,
-		Context: context.Background(),
-	}
+	ctx := context.Background()
 
 	// Behaviour to delete one project at a time - will be made into loop later
+	project := os.Getenv("GCP_PROJECT_ID")
+	config := config.Config{
+		Project: project,
+		Timeout: 90,
+		Context: ctx,
+		Zones:   gcp.GetZones(ctx, project),
+	}
 	removeProject(config)
 }
 
@@ -50,6 +53,11 @@ func removeProject(config config.Config) {
 }
 
 func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.Resource, dependencyTimeout int) error {
+	log.Println("[Info] Retrieving resource list for resource:", resource.Name())
+	if len(resource.List()) == 0 {
+		log.Println("[Skipping] No", resource.Name(), "items to delete")
+		return nil
+	}
 
 	// deleteSuccess = false
 	pollTime := 5
@@ -66,9 +74,11 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 			seconds += pollTime
 			log.Printf("[Waiting] Resource %v waiting for dependency %v to delete. Time waited: %v\n", resource.Name(), dependencyResource.Name(), seconds)
 		} else {
+			log.Println("[Skipping] No", dependencyResource.Name(), "items to delete")
 			break
 		}
 	}
 
+	log.Println("[Remove] Removing", resource.Name(), "items:", resource.List())
 	return resource.Remove()
 }

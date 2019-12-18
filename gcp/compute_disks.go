@@ -37,25 +37,13 @@ func (c *ComputeDisks) Name() string {
 
 // Setup - populates the struct
 func (c *ComputeDisks) Setup(config config.Config) {
-	log.Println("[Setup] Getting list for", c.Name())
 	c.base.config = config
-	c.List()
-	c.base.cache = true
 }
 
 // List - Returns a list of all ComputeDisks
 func (c *ComputeDisks) List() []string {
-	if c.base.cache {
-		return c.base.resourceNames
-	}
-	zoneListCall := c.serviceClient.Zones.List(c.base.config.Project)
-	zoneList, err := zoneListCall.Do()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, zone := range zoneList.Items {
-		instanceListCall := c.serviceClient.Disks.List(c.base.config.Project, zone.Name)
+	for _, zone := range c.base.config.Zones {
+		instanceListCall := c.serviceClient.Disks.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()
 		if err != nil {
 			log.Fatal(err)
@@ -80,11 +68,6 @@ func (c *ComputeDisks) Dependencies() []string {
 
 // Remove -
 func (c *ComputeDisks) Remove() error {
-	if len(c.base.resourceNames) == 0 {
-		log.Println("[Skipping] No", c.Name(), "items to delete")
-		return nil
-	}
-	log.Println("[Remove] Removing", c.Name(), "items:", c.List())
 	// Removal logic
 	c.base.resourceNames = []string{}
 	return nil

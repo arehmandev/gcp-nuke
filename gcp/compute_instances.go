@@ -37,26 +37,13 @@ func (c *ComputeInstances) Name() string {
 
 // Setup - populates the struct
 func (c *ComputeInstances) Setup(config config.Config) {
-	log.Println("[Setup] Getting list for", c.Name())
 	c.base.config = config
-	c.List()
-	c.base.cache = true
 }
 
 // List - Returns a list of all ComputeInstances
 func (c *ComputeInstances) List() []string {
-	if c.base.cache {
-		return c.base.resourceNames
-	}
-	zoneListCall := c.serviceClient.Zones.List(c.base.config.Project)
-	zoneList, err := zoneListCall.Do()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	for _, zone := range zoneList.Items {
-
-		instanceListCall := c.serviceClient.Instances.List(c.base.config.Project, zone.Name)
+	for _, zone := range c.base.config.Zones {
+		instanceListCall := c.serviceClient.Instances.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()
 		if err != nil {
 			log.Fatal(err)
@@ -81,12 +68,14 @@ func (c *ComputeInstances) Dependencies() []string {
 
 // Remove -
 func (c *ComputeInstances) Remove() error {
-	if len(c.base.resourceNames) == 0 {
-		log.Println("[Skipping] No", c.Name(), "items to delete")
-		return nil
-	}
-	log.Println("[Remove] Removing", c.Name(), "items:", c.List())
 	// Removal logic
+	// for _, zone := range c.base.config.Zones {
+	// 	for _, instanceid := range c.base.resourceNames {
+	// 		deleteCall := c.serviceClient.Instances.Delete(c.base.config.Project, zone, instanceid)
+	// 		deleteCall.Do()
+	// 	}
+	// }
+
 	c.base.resourceNames = []string{}
 	return nil
 }

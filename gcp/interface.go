@@ -5,13 +5,14 @@ import (
 	"log"
 
 	"github.com/arehmandev/gcp-nuke/config"
+	"golang.org/x/oauth2/google"
+	"google.golang.org/api/compute/v1"
 )
 
 // ResourceBase -
 type ResourceBase struct {
 	resourceNames []string
 	config        config.Config
-	cache         bool
 }
 
 // Resource -
@@ -41,4 +42,28 @@ func GetResourceMap(config config.Config) map[string]Resource {
 	}
 
 	return resourceMap
+}
+
+// GetZones -
+func GetZones(defaultContext context.Context, project string) []string {
+	log.Println("[Info] Retrieving zones for project:", project)
+	client, err := google.DefaultClient(defaultContext, compute.ComputeScope)
+	if err != nil {
+		log.Fatal(err)
+	}
+	serviceClient, err := compute.New(client)
+	if err != nil {
+		log.Fatal(err)
+	}
+	zoneListCall := serviceClient.Zones.List(project)
+	zoneList, err := zoneListCall.Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	zoneStringSlice := []string{}
+	for _, zone := range zoneList.Items {
+		zoneStringSlice = append(zoneStringSlice, zone.Name)
+	}
+	return zoneStringSlice
 }
