@@ -33,7 +33,6 @@ type Resource interface {
 }
 
 var resourceMap = make(map[string]Resource)
-var ctx = context.Background()
 
 func register(resource Resource) {
 	_, exists := resourceMap[resource.Name()]

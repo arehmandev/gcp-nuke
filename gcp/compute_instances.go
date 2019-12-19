@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/arehmandev/gcp-nuke/config"
-	"golang.org/x/oauth2/google"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/compute/v1"
 )
@@ -19,10 +18,8 @@ type ComputeInstances struct {
 }
 
 func init() {
-	client, err := google.DefaultClient(ctx, compute.ComputeScope)
-	if err != nil {
-		log.Fatal(err)
-	}
+	client := clientFactory(compute.ComputeScope)
+
 	computeService, err := compute.New(client)
 	if err != nil {
 		log.Fatal(err)

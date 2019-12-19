@@ -10,8 +10,8 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-// ComputeRegionAutoScalers -
-type ComputeRegionAutoScalers struct {
+// ContainerGKEClusters -
+type ContainerGKEClusters struct {
 	serviceClient *compute.Service
 	base          ResourceBase
 	resourceMap   map[string]DefaultResourceProperties
@@ -24,19 +24,19 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	computeResource := ComputeRegionAutoScalers{
+	computeResource := ContainerGKEClusters{
 		serviceClient: computeService,
 	}
 	register(&computeResource)
 }
 
-// Name - Name of the resourceLister for ComputeRegionAutoScalers
-func (c *ComputeRegionAutoScalers) Name() string {
-	return "ComputeRegionAutoScalers"
+// Name - Name of the resourceLister for ContainerGKEClusters
+func (c *ContainerGKEClusters) Name() string {
+	return "ContainerGKEClusters"
 }
 
-// ToSlice - Name of the resourceLister for ComputeRegionAutoScalers
-func (c *ComputeRegionAutoScalers) ToSlice() (slice []string) {
+// ToSlice - Name of the resourceLister for ContainerGKEClusters
+func (c *ContainerGKEClusters) ToSlice() (slice []string) {
 	for key := range c.resourceMap {
 		slice = append(slice, key)
 	}
@@ -44,20 +44,20 @@ func (c *ComputeRegionAutoScalers) ToSlice() (slice []string) {
 }
 
 // Setup - populates the struct
-func (c *ComputeRegionAutoScalers) Setup(config config.Config) {
+func (c *ContainerGKEClusters) Setup(config config.Config) {
 	c.base.config = config
 	c.resourceMap = make(map[string]DefaultResourceProperties)
 
 }
 
-// List - Returns a list of all ComputeRegionAutoScalers
-func (c *ComputeRegionAutoScalers) List(refreshCache bool) []string {
+// List - Returns a list of all ContainerGKEClusters
+func (c *ContainerGKEClusters) List(refreshCache bool) []string {
 	if !refreshCache {
 		return c.ToSlice()
 	}
 	log.Println("[Info] Retrieving list of resources for", c.Name())
 	for _, region := range c.base.config.Regions {
-		instanceListCall := c.serviceClient.RegionAutoscalers.List(c.base.config.Project, region)
+		instanceListCall := c.serviceClient.RegionInstanceGroupManagers.List(c.base.config.Project, region)
 		instanceList, err := instanceListCall.Do()
 		if err != nil {
 			log.Fatal(err)
@@ -74,12 +74,13 @@ func (c *ComputeRegionAutoScalers) List(refreshCache bool) []string {
 }
 
 // Dependencies - Returns a List of resource names to check for
-func (c *ComputeRegionAutoScalers) Dependencies() []string {
-	return []string{}
+func (c *ContainerGKEClusters) Dependencies() []string {
+	a := ComputeRegionAutoScalers{}
+	return []string{a.Name()}
 }
 
 // Remove -
-func (c *ComputeRegionAutoScalers) Remove() error {
+func (c *ContainerGKEClusters) Remove() error {
 
 	// Removal logic
 	errs, _ := errgroup.WithContext(c.base.config.Context)
@@ -90,7 +91,7 @@ func (c *ComputeRegionAutoScalers) Remove() error {
 
 		// Parallel instance deletion
 		errs.Go(func() error {
-			deleteCall := c.serviceClient.RegionAutoscalers.Delete(c.base.config.Project, region, instanceID)
+			deleteCall := c.serviceClient.RegionInstanceGroupManagers.Delete(c.base.config.Project, region, instanceID)
 			operation, err := deleteCall.Do()
 			if err != nil {
 				return err
