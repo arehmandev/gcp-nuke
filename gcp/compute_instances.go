@@ -18,9 +18,7 @@ type ComputeInstances struct {
 }
 
 func init() {
-	client := clientFactory(compute.ComputeScope)
-
-	computeService, err := compute.New(client)
+	computeService, err := compute.NewService(Ctx)
 	if err != nil {
 		log.Fatal(err)
 	}

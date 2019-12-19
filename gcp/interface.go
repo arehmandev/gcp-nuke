@@ -32,6 +32,8 @@ type Resource interface {
 	Remove() error
 }
 
+// Ctx = context
+var Ctx = context.Background()
 var resourceMap = make(map[string]Resource)
 
 func register(resource Resource) {
