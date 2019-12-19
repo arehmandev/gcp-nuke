@@ -27,6 +27,7 @@ func main() {
 		Zones:    gcp.GetZones(ctx, project),
 		Regions:  gcp.GetRegions(ctx, project),
 	}
+	log.Printf("[Info] Timeout %v seconds. Polltime %v seconds", config.Timeout, config.PollTime)
 	removeProject(config)
 }
 
@@ -99,7 +100,7 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 			return fmt.Errorf("[Error] Resource %v timed out whilst trying to delete. Time waited: %v", resource.Name(), timeOut)
 		}
 
-		log.Printf("[Remove] In use Resource: %v. Items: %v. Waiting %v seconds before retrying delete", resource.Name(), resource.List(false), pollTime)
+		log.Printf("[Remove] In use Resource: %v. Items: %v. Waiting before retrying delete. (%v seconds)", resource.Name(), resource.List(false), seconds)
 		time.Sleep(time.Duration(pollTime) * time.Second)
 		seconds += pollTime
 		err = resource.Remove()
