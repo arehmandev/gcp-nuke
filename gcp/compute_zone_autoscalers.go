@@ -94,15 +94,21 @@ func (c *ComputeZoneAutoScalers) Remove() error {
 		// Parallel instance deletion
 		errs.Go(func() error {
 			deleteCall := c.serviceClient.Autoscalers.Delete(c.base.config.Project, zone, instanceID)
+			operation, err := deleteCall.Do()
+			if err != nil {
+				return err
+			}
 			var opStatus string
 			seconds := 0
 			for opStatus != "DONE" {
 				log.Printf("[Info] Resource currently being deleted %v [type: %v project: %v zone: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, zone, seconds)
-				operation, err := deleteCall.Do()
+
+				operationCall := c.serviceClient.ZoneOperations.Get(c.base.config.Project, zone, operation.Name)
+				checkOpp, err := operationCall.Do()
 				if err != nil {
 					return err
 				}
-				opStatus = operation.Status
+				opStatus = checkOpp.Status
 
 				time.Sleep(time.Duration(c.base.config.PollTime) * time.Second)
 				seconds += c.base.config.PollTime
