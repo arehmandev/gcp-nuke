@@ -68,7 +68,7 @@ func (c *ComputeDisks) List(refreshCache bool) []string {
 
 		for _, instance := range instanceList.Items {
 			instanceResource := DefaultResourceProperties{
-				zone: instance.Zone,
+				zone: zone,
 			}
 			c.resourceMap[instance.Name] = instanceResource
 		}
