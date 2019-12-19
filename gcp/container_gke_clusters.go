@@ -70,8 +70,7 @@ func (c *ContainerGKEClusters) List(refreshCache bool) []string {
 
 // Dependencies - Returns a List of resource names to check for
 func (c *ContainerGKEClusters) Dependencies() []string {
-	a := ComputeRegionAutoScalers{}
-	return []string{a.Name()}
+	return []string{}
 }
 
 // Remove -

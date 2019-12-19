@@ -18,7 +18,7 @@ func main() {
 	project := os.Getenv("GCP_PROJECT_ID")
 	config := config.Config{
 		Project:  project,
-		Timeout:  120,
+		Timeout:  300,
 		PollTime: 10,
 		Context:  gcp.Ctx,
 		Zones:    gcp.GetZones(gcp.Ctx, project),
