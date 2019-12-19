@@ -11,8 +11,8 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-// ComputeDisks -
-type ComputeDisks struct {
+// ComputeInstanceZoneGroups -
+type ComputeInstanceZoneGroups struct {
 	serviceClient *compute.Service
 	base          ResourceBase
 	resourceMap   map[string]DefaultResourceProperties
@@ -27,19 +27,19 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	computeResource := ComputeDisks{
+	computeResource := ComputeInstanceZoneGroups{
 		serviceClient: computeService,
 	}
 	register(&computeResource)
 }
 
-// Name - Name of the resourceLister for ComputeDisks
-func (c *ComputeDisks) Name() string {
-	return "ComputeDisks"
+// Name - Name of the resourceLister for ComputeInstanceZoneGroups
+func (c *ComputeInstanceZoneGroups) Name() string {
+	return "ComputeInstanceZoneGroups"
 }
 
-// ToSlice - Name of the resourceLister for ComputeDisks
-func (c *ComputeDisks) ToSlice() (slice []string) {
+// ToSlice - Name of the resourceLister for ComputeInstanceZoneGroups
+func (c *ComputeInstanceZoneGroups) ToSlice() (slice []string) {
 	for key := range c.resourceMap {
 		slice = append(slice, key)
 	}
@@ -47,20 +47,20 @@ func (c *ComputeDisks) ToSlice() (slice []string) {
 }
 
 // Setup - populates the struct
-func (c *ComputeDisks) Setup(config config.Config) {
+func (c *ComputeInstanceZoneGroups) Setup(config config.Config) {
 	c.base.config = config
 	c.resourceMap = make(map[string]DefaultResourceProperties)
 	c.List(true)
 }
 
-// List - Returns a list of all ComputeDisks
-func (c *ComputeDisks) List(refreshCache bool) []string {
+// List - Returns a list of all ComputeInstanceZoneGroups
+func (c *ComputeInstanceZoneGroups) List(refreshCache bool) []string {
 	if !refreshCache {
 		return c.ToSlice()
 	}
 	log.Println("[Info] Retrieving list of resources for", c.Name())
 	for _, zone := range c.base.config.Zones {
-		instanceListCall := c.serviceClient.Disks.List(c.base.config.Project, zone)
+		instanceListCall := c.serviceClient.InstanceGroupManagers.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()
 		if err != nil {
 			log.Fatal(err)
@@ -68,7 +68,7 @@ func (c *ComputeDisks) List(refreshCache bool) []string {
 
 		for _, instance := range instanceList.Items {
 			instanceResource := DefaultResourceProperties{
-				zone: instance.Zone,
+				zone: zone,
 			}
 			c.resourceMap[instance.Name] = instanceResource
 		}
@@ -77,15 +77,12 @@ func (c *ComputeDisks) List(refreshCache bool) []string {
 }
 
 // Dependencies - Returns a List of resource names to check for
-func (c *ComputeDisks) Dependencies() []string {
-	a := ComputeInstances{}
-	return []string{
-		a.Name(),
-	}
+func (c *ComputeInstanceZoneGroups) Dependencies() []string {
+	return []string{}
 }
 
 // Remove -
-func (c *ComputeDisks) Remove() error {
+func (c *ComputeInstanceZoneGroups) Remove() error {
 
 	// Removal logic
 	errs, _ := errgroup.WithContext(c.base.config.Context)
@@ -96,7 +93,7 @@ func (c *ComputeDisks) Remove() error {
 
 		// Parallel instance deletion
 		errs.Go(func() error {
-			deleteCall := c.serviceClient.Disks.Delete(c.base.config.Project, zone, instanceID)
+			deleteCall := c.serviceClient.InstanceGroupManagers.Delete(c.base.config.Project, zone, instanceID)
 			var opStatus string
 			seconds := 0
 			for opStatus != "DONE" {

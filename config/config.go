@@ -6,8 +6,10 @@ import (
 
 // Config -
 type Config struct {
-	Project string
-	Zones   []string
-	Timeout int
-	Context context.Context
+	Project  string
+	Zones    []string
+	Regions  []string
+	Timeout  int
+	PollTime int
+	Context  context.Context
 }

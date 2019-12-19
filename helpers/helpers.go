@@ -11,7 +11,7 @@ func SliceContains(inputList []string, input string) bool {
 }
 
 // MapKeys -
-func MapKeys(input map[string]string) []string {
+func MapKeys(input map[string]interface{}) []string {
 	keys := []string{}
 	for k := range input {
 		keys = append(keys, k)

@@ -1,11 +1,13 @@
 package gcp
 
 import (
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/arehmandev/gcp-nuke/config"
-	"github.com/arehmandev/gcp-nuke/helpers"
 	"golang.org/x/oauth2/google"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -13,6 +15,7 @@ import (
 type ComputeInstances struct {
 	serviceClient *compute.Service
 	base          ResourceBase
+	resourceMap   map[string]DefaultResourceProperties
 }
 
 func init() {
@@ -35,51 +38,93 @@ func (c *ComputeInstances) Name() string {
 	return "ComputeInstances"
 }
 
+// ToSlice - Name of the resourceLister for ComputeInstances
+func (c *ComputeInstances) ToSlice() (slice []string) {
+	for key := range c.resourceMap {
+		slice = append(slice, key)
+	}
+	return slice
+}
+
 // Setup - populates the struct
 func (c *ComputeInstances) Setup(config config.Config) {
 	c.base.config = config
-	c.base.resourceMap = make(map[string]string)
+	c.resourceMap = make(map[string]DefaultResourceProperties)
 	c.List(true)
 }
 
 // List - Returns a list of all ComputeInstances
 func (c *ComputeInstances) List(refreshCache bool) []string {
 	if !refreshCache {
-		return helpers.MapKeys(c.base.resourceMap)
+		return c.ToSlice()
 	}
 	log.Println("[Info] Retrieving list of resources for", c.Name())
 	for _, zone := range c.base.config.Zones {
-		instanceListCall := c.serviceClient.Disks.List(c.base.config.Project, zone)
+		instanceListCall := c.serviceClient.Instances.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		for _, instance := range instanceList.Items {
-			c.base.resourceMap[instance.Name] = zone
+			instanceResource := DefaultResourceProperties{
+				zone: zone,
+			}
+			c.resourceMap[instance.Name] = instanceResource
 		}
 	}
-	return helpers.MapKeys(c.base.resourceMap)
+	return c.ToSlice()
 }
 
 // Dependencies - Returns a List of resource names to check for
 func (c *ComputeInstances) Dependencies() []string {
-	a := ComputeInstanceGroups{}
+	a := ComputeInstances{}
+	b := ComputeInstanceZoneGroups{}
+	d := ComputeInstanceRegionGroups{}
+
 	return []string{
 		a.Name(),
+		b.Name(),
+		d.Name(),
 	}
 }
 
 // Remove -
 func (c *ComputeInstances) Remove() error {
-	// Removal logic
-	// for _, zone := range c.base.config.Zones {
-	// 	for _, instanceid := range c.base.resourceNames {
-	// 		deleteCall := c.serviceClient.Instances.Delete(c.base.config.Project, zone, instanceid)
-	// 		deleteCall.Do()
-	// 	}
-	// }
 
-	c.base.resourceMap = make(map[string]string)
-	return nil
+	// Removal logic
+	errs, _ := errgroup.WithContext(c.base.config.Context)
+
+	for instanceID, instanceProperties := range c.resourceMap {
+		instanceID := instanceID
+		zone := instanceProperties.zone
+
+		// Parallel instance deletion
+		errs.Go(func() error {
+			deleteCall := c.serviceClient.Instances.Delete(c.base.config.Project, zone, instanceID)
+			var opStatus string
+			seconds := 0
+			for opStatus != "DONE" {
+				log.Printf("[Info] Resource currently being deleted %v [type: %v project: %v zone: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, zone, seconds)
+				operation, err := deleteCall.Do()
+				if err != nil {
+					return err
+				}
+				opStatus = operation.Status
+
+				time.Sleep(time.Duration(c.base.config.PollTime) * time.Second)
+				seconds += c.base.config.PollTime
+				if seconds > c.base.config.Timeout {
+					return fmt.Errorf("[Error] Resource deletion timed out for %v [type: %v project: %v zone: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, zone, c.base.config.Timeout)
+				}
+			}
+			delete(c.resourceMap, instanceID)
+			log.Printf("[Info] Resource deleted %v [type: %v project: %v zone: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, zone, seconds)
+			return nil
+		})
+
+	}
+	// Wait for all deletions to complete, and return the first non nil error
+	err := errs.Wait()
+	return err
 }

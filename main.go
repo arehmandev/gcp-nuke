@@ -19,10 +19,12 @@ func main() {
 	// Behaviour to delete one project at a time - will be made into loop later
 	project := os.Getenv("GCP_PROJECT_ID")
 	config := config.Config{
-		Project: project,
-		Timeout: 90,
-		Context: ctx,
-		Zones:   gcp.GetZones(ctx, project),
+		Project:  project,
+		Timeout:  90,
+		PollTime: 5,
+		Context:  ctx,
+		Zones:    gcp.GetZones(ctx, project),
+		Regions:  gcp.GetRegions(ctx, project),
 	}
 	removeProject(config)
 }

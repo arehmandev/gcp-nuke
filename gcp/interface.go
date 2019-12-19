@@ -3,6 +3,7 @@ package gcp
 import (
 	"context"
 	"log"
+	"strings"
 
 	"github.com/arehmandev/gcp-nuke/config"
 	"golang.org/x/oauth2/google"
@@ -11,14 +12,20 @@ import (
 
 // ResourceBase -
 type ResourceBase struct {
-	// resourceId -> projectId
-	resourceMap map[string]string
-	config      config.Config
+	config config.Config
+}
+
+// DefaultResourceProperties -
+type DefaultResourceProperties struct {
+	project string
+	zone    string
+	region  string
 }
 
 // Resource -
 type Resource interface {
 	Name() string
+	ToSlice() []string
 	Setup(config config.Config)
 	List(useCache bool) []string
 	Dependencies() []string
@@ -64,7 +71,33 @@ func GetZones(defaultContext context.Context, project string) []string {
 
 	zoneStringSlice := []string{}
 	for _, zone := range zoneList.Items {
-		zoneStringSlice = append(zoneStringSlice, zone.Name)
+		zoneNameSplit := strings.Split(zone.Name, "/")
+		zoneStringSlice = append(zoneStringSlice, zoneNameSplit[len(zoneNameSplit)-1])
 	}
 	return zoneStringSlice
+}
+
+// GetRegions -
+func GetRegions(defaultContext context.Context, project string) []string {
+	log.Println("[Info] Retrieving regions for project:", project)
+	client, err := google.DefaultClient(defaultContext, compute.ComputeScope)
+	if err != nil {
+		log.Fatal(err)
+	}
+	serviceClient, err := compute.New(client)
+	if err != nil {
+		log.Fatal(err)
+	}
+	regionListCall := serviceClient.Regions.List(project)
+	regionList, err := regionListCall.Do()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	regionStringSlice := []string{}
+	for _, region := range regionList.Items {
+		regionNameSplit := strings.Split(region.Name, "/")
+		regionStringSlice = append(regionStringSlice, regionNameSplit[len(regionNameSplit)-1])
+	}
+	return regionStringSlice
 }
