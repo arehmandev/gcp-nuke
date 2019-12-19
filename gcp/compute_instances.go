@@ -106,9 +106,9 @@ func (c *ComputeInstances) Remove() error {
 			}
 			for _, disk := range getOp.Disks {
 				// Set all attached compute disks to auto delete on instance deletion
-				diskSetCAll := c.serviceClient.Instances.SetDiskAutoDelete(c.base.config.Project, zone, instanceID, true, disk.DeviceName)
+				diskSetCall := c.serviceClient.Instances.SetDiskAutoDelete(c.base.config.Project, zone, instanceID, true, disk.DeviceName)
 				// Todo - check this op until it completes, most likely not needed, but always nice to be safe
-				_, err := diskSetCAll.Do()
+				_, err := diskSetCall.Do()
 				if err != nil {
 					return err
 				}

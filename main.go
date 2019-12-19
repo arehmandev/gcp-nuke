@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/arehmandev/gcp-nuke/config"
@@ -20,8 +21,8 @@ func main() {
 	project := os.Getenv("GCP_PROJECT_ID")
 	config := config.Config{
 		Project:  project,
-		Timeout:  90,
-		PollTime: 5,
+		Timeout:  120,
+		PollTime: 10,
 		Context:  ctx,
 		Zones:    gcp.GetZones(ctx, project),
 		Regions:  gcp.GetRegions(ctx, project),
@@ -39,7 +40,8 @@ func removeProject(config config.Config) {
 		resource := resource
 		errs.Go(func() error {
 			resource.List(true)
-			err := parallelResourceDeletion(resourceMap, resource, config.Timeout)
+			err := parallelResourceDeletion(resourceMap, resource, config)
+
 			if err != nil {
 				return err
 			}
@@ -55,21 +57,21 @@ func removeProject(config config.Config) {
 	log.Printf("-- Deletion complete for project %v --\n", config.Project)
 }
 
-func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.Resource, dependencyTimeout int) error {
+func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.Resource, config config.Config) error {
 	refreshCache := false
 	if len(resource.List(false)) == 0 {
 		log.Println("[Skipping] No", resource.Name(), "items to delete")
 		return nil
 	}
 
-	// deleteSuccess = false
-	pollTime := 5
+	timeOut := config.Timeout
+	pollTime := config.PollTime
 	seconds := 0
 
 	// Wait for dependencies to delete
 	for _, dependencyResourceName := range resource.Dependencies() {
-		if seconds > dependencyTimeout {
-			return fmt.Errorf("[Error] Resource %v timed out whilst waiting for dependency %v to delete. Time waited: %v", resource, dependencyResourceName, dependencyTimeout)
+		if seconds > timeOut {
+			return fmt.Errorf("[Error] Resource %v timed out whilst waiting for dependency %v to delete. Time waited: %v", resource.Name(), dependencyResourceName, timeOut)
 		}
 		dependencyResource := resourceMap[dependencyResourceName]
 		if len(dependencyResource.List(false)) != 0 {
@@ -87,5 +89,22 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 	}
 
 	log.Println("[Remove] Removing", resource.Name(), "items:", resource.List(false))
-	return resource.Remove()
+	seconds = 0
+	err := resource.Remove()
+
+	// Unfortunately the API seems inconsistent with timings, so retry until any dependent resources delete
+	for err != nil && !strings.Contains("resourceInUseByAnotherResource", err.Error()) {
+
+		if seconds > timeOut {
+			return fmt.Errorf("[Error] Resource %v timed out whilst trying to delete. Time waited: %v", resource.Name(), timeOut)
+		}
+
+		log.Printf("[Remove] In use Resource: %v. Items: %v. Waiting %v seconds before retrying delete", resource.Name(), resource.List(false), pollTime)
+		time.Sleep(time.Duration(pollTime) * time.Second)
+		seconds += pollTime
+		err = resource.Remove()
+
+	}
+
+	return err
 }
