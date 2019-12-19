@@ -50,7 +50,7 @@ func (c *ComputeDisks) ToSlice() (slice []string) {
 func (c *ComputeDisks) Setup(config config.Config) {
 	c.base.config = config
 	c.resourceMap = make(map[string]DefaultResourceProperties)
-	c.List(true)
+
 }
 
 // List - Returns a list of all ComputeDisks
@@ -67,6 +67,10 @@ func (c *ComputeDisks) List(refreshCache bool) []string {
 		}
 
 		for _, instance := range instanceList.Items {
+			// Don't delete any attached to instances - these are removed during instance deletion
+			if len(instance.Users) > 0 {
+				continue
+			}
 			instanceResource := DefaultResourceProperties{
 				zone: zone,
 			}
@@ -78,10 +82,7 @@ func (c *ComputeDisks) List(refreshCache bool) []string {
 
 // Dependencies - Returns a List of resource names to check for
 func (c *ComputeDisks) Dependencies() []string {
-	a := ComputeInstances{}
-	return []string{
-		a.Name(),
-	}
+	return []string{}
 }
 
 // Remove -

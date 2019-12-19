@@ -12,4 +12,5 @@ type Config struct {
 	Timeout  int
 	PollTime int
 	Context  context.Context
+	DryRun   bool
 }

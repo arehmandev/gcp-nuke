@@ -50,7 +50,7 @@ func (c *ComputeInstances) ToSlice() (slice []string) {
 func (c *ComputeInstances) Setup(config config.Config) {
 	c.base.config = config
 	c.resourceMap = make(map[string]DefaultResourceProperties)
-	c.List(true)
+
 }
 
 // List - Returns a list of all ComputeInstances
@@ -78,12 +78,10 @@ func (c *ComputeInstances) List(refreshCache bool) []string {
 
 // Dependencies - Returns a List of resource names to check for
 func (c *ComputeInstances) Dependencies() []string {
-	a := ComputeInstances{}
 	b := ComputeInstanceZoneGroups{}
 	d := ComputeInstanceRegionGroups{}
 
 	return []string{
-		a.Name(),
 		b.Name(),
 		d.Name(),
 	}
@@ -101,6 +99,20 @@ func (c *ComputeInstances) Remove() error {
 
 		// Parallel instance deletion
 		errs.Go(func() error {
+			getInstanceCall := c.serviceClient.Instances.Get(c.base.config.Project, zone, instanceID)
+			getOp, err := getInstanceCall.Do()
+			if err != nil {
+				return err
+			}
+			for _, disk := range getOp.Disks {
+				// Set all attached compute disks to auto delete on instance deletion
+				diskSetCAll := c.serviceClient.Instances.SetDiskAutoDelete(c.base.config.Project, zone, instanceID, true, disk.DeviceName)
+				// Todo - check this op until it completes, most likely not needed, but always nice to be safe
+				_, err := diskSetCAll.Do()
+				if err != nil {
+					return err
+				}
+			}
 			deleteCall := c.serviceClient.Instances.Delete(c.base.config.Project, zone, instanceID)
 			operation, err := deleteCall.Do()
 			if err != nil {

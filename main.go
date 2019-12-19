@@ -38,6 +38,7 @@ func removeProject(config config.Config) {
 	for _, resource := range resourceMap {
 		resource := resource
 		errs.Go(func() error {
+			resource.List(true)
 			err := parallelResourceDeletion(resourceMap, resource, config.Timeout)
 			if err != nil {
 				return err

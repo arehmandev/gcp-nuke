@@ -50,7 +50,7 @@ func (c *ComputeInstanceZoneGroups) ToSlice() (slice []string) {
 func (c *ComputeInstanceZoneGroups) Setup(config config.Config) {
 	c.base.config = config
 	c.resourceMap = make(map[string]DefaultResourceProperties)
-	c.List(true)
+	
 }
 
 // List - Returns a list of all ComputeInstanceZoneGroups
