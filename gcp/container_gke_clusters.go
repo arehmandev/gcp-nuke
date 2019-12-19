@@ -7,25 +7,25 @@ import (
 
 	"github.com/arehmandev/gcp-nuke/config"
 	"golang.org/x/sync/errgroup"
-	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/container/v1"
 )
 
 // ContainerGKEClusters -
 type ContainerGKEClusters struct {
-	serviceClient *compute.Service
+	serviceClient *container.Service
 	base          ResourceBase
 	resourceMap   map[string]DefaultResourceProperties
 }
 
 func init() {
-	computeService, err := compute.NewService(Ctx)
+	containerService, err := container.NewService(Ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-	computeResource := ContainerGKEClusters{
-		serviceClient: computeService,
+	containerResource := ContainerGKEClusters{
+		serviceClient: containerService,
 	}
-	register(&computeResource)
+	register(&containerResource)
 }
 
 // Name - Name of the resourceLister for ContainerGKEClusters
@@ -55,13 +55,13 @@ func (c *ContainerGKEClusters) List(refreshCache bool) []string {
 	}
 	log.Println("[Info] Retrieving list of resources for", c.Name())
 	for _, region := range c.base.config.Regions {
-		instanceListCall := c.serviceClient.RegionInstanceGroupManagers.List(c.base.config.Project, region)
+		instanceListCall := c.serviceClient.Projects.Locations.Clusters.List(fmt.Sprintf("projects/%v/locations/%v", c.base.config.Project, region))
 		instanceList, err := instanceListCall.Do()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		for _, instance := range instanceList.Items {
+		for _, instance := range instanceList.Clusters {
 			instanceResource := DefaultResourceProperties{
 				region: region,
 			}
@@ -86,10 +86,9 @@ func (c *ContainerGKEClusters) Remove() error {
 	for instanceID, instanceProperties := range c.resourceMap {
 		instanceID := instanceID
 		region := instanceProperties.region
-
 		// Parallel instance deletion
 		errs.Go(func() error {
-			deleteCall := c.serviceClient.RegionInstanceGroupManagers.Delete(c.base.config.Project, region, instanceID)
+			deleteCall := c.serviceClient.Projects.Locations.Clusters.Delete(instanceID)
 			operation, err := deleteCall.Do()
 			if err != nil {
 				return err
@@ -98,7 +97,7 @@ func (c *ContainerGKEClusters) Remove() error {
 			seconds := 0
 			for opStatus != "DONE" {
 				log.Printf("[Info] Resource currently being deleted %v [type: %v project: %v region: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, region, seconds)
-				operationCall := c.serviceClient.RegionOperations.Get(c.base.config.Project, region, operation.Name)
+				operationCall := c.serviceClient.Projects.Locations.Operations.Get(operation.Name)
 				checkOpp, err := operationCall.Do()
 				if err != nil {
 					return err
