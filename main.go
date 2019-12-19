@@ -16,8 +16,12 @@ func main() {
 
 	// Behaviour to delete one project at a time - will be made into loop later
 	project := os.Getenv("GCP_PROJECT_ID")
+	if project == "" {
+		log.Fatalln("GCP_PROJECT_ID environment variable not set")
+	}
 	config := config.Config{
 		Project:  project,
+		DryRun:   true,
 		Timeout:  300,
 		PollTime: 10,
 		Context:  gcp.Ctx,
@@ -38,6 +42,10 @@ func removeProject(config config.Config) {
 		resource := resource
 		errs.Go(func() error {
 			resource.List(true)
+			if config.DryRun {
+				parallelDryRun(resourceMap, resource, config)
+				return nil
+			}
 			err := parallelResourceDeletion(resourceMap, resource, config)
 
 			if err != nil {
@@ -52,7 +60,7 @@ func removeProject(config config.Config) {
 		log.Fatal(err)
 	}
 
-	log.Printf("-- Deletion complete for project %v --\n", config.Project)
+	log.Printf("-- Deletion complete for project %v (dry-run: %v) --\n", config.Project, config.DryRun)
 }
 
 func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.Resource, config config.Config) error {
