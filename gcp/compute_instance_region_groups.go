@@ -78,7 +78,8 @@ func (c *ComputeInstanceRegionGroups) List(refreshCache bool) []string {
 
 // Dependencies - Returns a List of resource names to check for
 func (c *ComputeInstanceRegionGroups) Dependencies() []string {
-	return []string{}
+	a := ComputeRegionAutoScalers{}
+	return []string{a.Name()}
 }
 
 // Remove -

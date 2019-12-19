@@ -11,8 +11,8 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-// ComputeInstanceZoneGroups -
-type ComputeInstanceZoneGroups struct {
+// ComputeZoneAutoScalers -
+type ComputeZoneAutoScalers struct {
 	serviceClient *compute.Service
 	base          ResourceBase
 	resourceMap   map[string]DefaultResourceProperties
@@ -27,19 +27,19 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	computeResource := ComputeInstanceZoneGroups{
+	computeResource := ComputeZoneAutoScalers{
 		serviceClient: computeService,
 	}
 	register(&computeResource)
 }
 
-// Name - Name of the resourceLister for ComputeInstanceZoneGroups
-func (c *ComputeInstanceZoneGroups) Name() string {
-	return "ComputeInstanceZoneGroups"
+// Name - Name of the resourceLister for ComputeZoneAutoScalers
+func (c *ComputeZoneAutoScalers) Name() string {
+	return "ComputeZoneAutoScalers"
 }
 
-// ToSlice - Name of the resourceLister for ComputeInstanceZoneGroups
-func (c *ComputeInstanceZoneGroups) ToSlice() (slice []string) {
+// ToSlice - Name of the resourceLister for ComputeZoneAutoScalers
+func (c *ComputeZoneAutoScalers) ToSlice() (slice []string) {
 	for key := range c.resourceMap {
 		slice = append(slice, key)
 	}
@@ -47,20 +47,20 @@ func (c *ComputeInstanceZoneGroups) ToSlice() (slice []string) {
 }
 
 // Setup - populates the struct
-func (c *ComputeInstanceZoneGroups) Setup(config config.Config) {
+func (c *ComputeZoneAutoScalers) Setup(config config.Config) {
 	c.base.config = config
 	c.resourceMap = make(map[string]DefaultResourceProperties)
 	c.List(true)
 }
 
-// List - Returns a list of all ComputeInstanceZoneGroups
-func (c *ComputeInstanceZoneGroups) List(refreshCache bool) []string {
+// List - Returns a list of all ComputeZoneAutoScalers
+func (c *ComputeZoneAutoScalers) List(refreshCache bool) []string {
 	if !refreshCache {
 		return c.ToSlice()
 	}
 	log.Println("[Info] Retrieving list of resources for", c.Name())
 	for _, zone := range c.base.config.Zones {
-		instanceListCall := c.serviceClient.InstanceGroupManagers.List(c.base.config.Project, zone)
+		instanceListCall := c.serviceClient.Autoscalers.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()
 		if err != nil {
 			log.Fatal(err)
@@ -77,13 +77,12 @@ func (c *ComputeInstanceZoneGroups) List(refreshCache bool) []string {
 }
 
 // Dependencies - Returns a List of resource names to check for
-func (c *ComputeInstanceZoneGroups) Dependencies() []string {
-	a := ComputeZoneAutoScalers{}
-	return []string{a.Name()}
+func (c *ComputeZoneAutoScalers) Dependencies() []string {
+	return []string{}
 }
 
 // Remove -
-func (c *ComputeInstanceZoneGroups) Remove() error {
+func (c *ComputeZoneAutoScalers) Remove() error {
 
 	// Removal logic
 	errs, _ := errgroup.WithContext(c.base.config.Context)
@@ -94,7 +93,7 @@ func (c *ComputeInstanceZoneGroups) Remove() error {
 
 		// Parallel instance deletion
 		errs.Go(func() error {
-			deleteCall := c.serviceClient.InstanceGroupManagers.Delete(c.base.config.Project, zone, instanceID)
+			deleteCall := c.serviceClient.Autoscalers.Delete(c.base.config.Project, zone, instanceID)
 			var opStatus string
 			seconds := 0
 			for opStatus != "DONE" {
