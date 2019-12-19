@@ -3,6 +3,7 @@ package gcp
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/arehmandev/gcp-nuke/config"
@@ -62,7 +63,8 @@ func (c *ContainerGKEClusters) List(refreshCache bool) []string {
 
 	for _, instance := range instanceList.Clusters {
 		instanceResource := DefaultResourceProperties{}
-		c.resourceMap[instance.Name] = instanceResource
+		clusterLink := extractGKESelfLink(instance.SelfLink)
+		c.resourceMap[clusterLink] = instanceResource
 	}
 
 	return c.ToSlice()
@@ -81,6 +83,7 @@ func (c *ContainerGKEClusters) Remove() error {
 
 	for instanceID := range c.resourceMap {
 		instanceID := instanceID
+		location := strings.Split(instanceID, "/")[3]
 		// Parallel instance deletion
 		errs.Go(func() error {
 			deleteCall := c.serviceClient.Projects.Locations.Clusters.Delete(instanceID)
@@ -92,7 +95,7 @@ func (c *ContainerGKEClusters) Remove() error {
 			seconds := 0
 			for opStatus != "DONE" {
 				log.Printf("[Info] Resource currently being deleted %v [type: %v project: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, seconds)
-				operationCall := c.serviceClient.Projects.Locations.Operations.Get(operation.Name)
+				operationCall := c.serviceClient.Projects.Locations.Operations.Get(fmt.Sprintf("projects/%v/locations/%v/operations/%v", c.base.config.Project, location, operation.Name))
 				checkOpp, err := operationCall.Do()
 				if err != nil {
 					return err

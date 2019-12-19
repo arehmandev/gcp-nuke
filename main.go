@@ -91,7 +91,7 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 	err := resource.Remove()
 
 	// Unfortunately the API seems inconsistent with timings, so retry until any dependent resources delete
-	for err != nil && !strings.Contains("resourceInUseByAnotherResource", err.Error()) {
+	for err != nil && strings.Contains("resourceInUseByAnotherResource", err.Error()) {
 
 		if seconds > timeOut {
 			return fmt.Errorf("[Error] Resource %v timed out whilst trying to delete. Time waited: %v", resource.Name(), timeOut)
@@ -102,6 +102,12 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 		seconds += pollTime
 		err = resource.Remove()
 
+	}
+
+	// Add some info to it
+	if err != nil {
+		detailedError := fmt.Errorf("[Error] Resource: %v. Items: %v. Details of error below:\n %v", resource.Name(), resource.List(false), err.Error())
+		err = detailedError
 	}
 
 	return err

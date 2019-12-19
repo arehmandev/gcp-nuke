@@ -102,3 +102,20 @@ func GetRegions(defaultContext context.Context, project string) []string {
 	}
 	return regionStringSlice
 }
+
+func extractGKESelfLink(input string) string {
+	var selfLinkSlice []string
+	var startAppend bool
+	for _, word := range strings.Split(input, "/") {
+		if word == "projects" {
+			startAppend = true
+		}
+		if word == "zones" {
+			word = "locations"
+		}
+		if startAppend {
+			selfLinkSlice = append(selfLinkSlice, word)
+		}
+	}
+	return strings.Join(selfLinkSlice, "/")
+}
