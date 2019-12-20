@@ -21,7 +21,7 @@ func main() {
 	}
 	config := config.Config{
 		Project:  project,
-		DryRun:   true,
+		DryRun:   false,
 		Timeout:  300,
 		PollTime: 10,
 		Context:  gcp.Ctx,
@@ -99,10 +99,10 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 	err := resource.Remove()
 
 	// Unfortunately the API seems inconsistent with timings, so retry until any dependent resources delete
-	for err != nil && strings.Contains("resourceInUseByAnotherResource", err.Error()) {
+	for err != nil && strings.Contains(err.Error(), "resourceInUseByAnotherResource") {
 
 		if seconds > timeOut {
-			return fmt.Errorf("[Error] Resource %v timed out whilst trying to delete. Time waited: %v", resource.Name(), timeOut)
+			return fmt.Errorf("[Error] Resource %v timed out whilst trying to delete. Time waited: %v. Details of error below:\n %v", resource.Name(), timeOut, err.Error())
 		}
 
 		log.Printf("[Remove] In use Resource: %v. Items: %v. Waiting before retrying delete. (%v seconds)", resource.Name(), resource.List(false), seconds)

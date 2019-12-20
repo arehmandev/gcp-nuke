@@ -105,7 +105,7 @@ func (c *ContainerGKEClusters) Remove() error {
 				time.Sleep(time.Duration(c.base.config.PollTime) * time.Second)
 				seconds += c.base.config.PollTime
 				if seconds > c.base.config.Timeout {
-					return fmt.Errorf("[Error] Resource deletion timed out for %v [type: %v project: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, c.base.config.Timeout)
+					return fmt.Errorf("[Error] Resource deletion timed out for %v [type: %v project: %v] (%v seconds):\n %v", instanceID, c.Name(), c.base.config.Project, c.base.config.Timeout, err.Error())
 				}
 			}
 			delete(c.resourceMap, instanceID)
