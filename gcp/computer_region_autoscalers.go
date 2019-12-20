@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/arehmandev/gcp-nuke/config"
+	"github.com/arehmandev/gcp-nuke/helpers"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/syncmap"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -14,7 +16,7 @@ import (
 type ComputeRegionAutoScalers struct {
 	serviceClient *compute.Service
 	base          ResourceBase
-	resourceMap   map[string]DefaultResourceProperties
+	resourceMap   syncmap.Map
 }
 
 func init() {
@@ -35,16 +37,13 @@ func (c *ComputeRegionAutoScalers) Name() string {
 
 // ToSlice - Name of the resourceLister for ComputeRegionAutoScalers
 func (c *ComputeRegionAutoScalers) ToSlice() (slice []string) {
-	for key := range c.resourceMap {
-		slice = append(slice, key)
-	}
-	return slice
+	return helpers.SortedSyncMapKeys(&c.resourceMap)
+
 }
 
 // Setup - populates the struct
 func (c *ComputeRegionAutoScalers) Setup(config config.Config) {
 	c.base.config = config
-	c.resourceMap = make(map[string]DefaultResourceProperties)
 
 }
 
@@ -65,7 +64,7 @@ func (c *ComputeRegionAutoScalers) List(refreshCache bool) []string {
 			instanceResource := DefaultResourceProperties{
 				region: region,
 			}
-			c.resourceMap[instance.Name] = instanceResource
+			c.resourceMap.Store(instance.Name, instanceResource)
 		}
 	}
 	return c.ToSlice()
@@ -82,9 +81,9 @@ func (c *ComputeRegionAutoScalers) Remove() error {
 	// Removal logic
 	errs, _ := errgroup.WithContext(c.base.config.Context)
 
-	for instanceID, instanceProperties := range c.resourceMap {
-		instanceID := instanceID
-		region := instanceProperties.region
+	c.resourceMap.Range(func(key, value interface{}) bool {
+		instanceID := key.(string)
+		region := value.(DefaultResourceProperties).region
 
 		// Parallel instance deletion
 		errs.Go(func() error {
@@ -110,12 +109,13 @@ func (c *ComputeRegionAutoScalers) Remove() error {
 					return fmt.Errorf("[Error] Resource deletion timed out for %v [type: %v project: %v region: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, region, c.base.config.Timeout)
 				}
 			}
-			delete(c.resourceMap, instanceID)
+			c.resourceMap.Delete(instanceID)
+
 			log.Printf("[Info] Resource deleted %v [type: %v project: %v region: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, region, seconds)
 			return nil
 		})
-
-	}
+		return true
+	})
 	// Wait for all deletions to complete, and return the first non nil error
 	err := errs.Wait()
 	return err

@@ -1,5 +1,12 @@
 package helpers
 
+import (
+	"fmt"
+	"sort"
+
+	"golang.org/x/sync/syncmap"
+)
+
 // SliceContains - check if slice contains value
 func SliceContains(inputList []string, input string) bool {
 	for _, value := range inputList {
@@ -17,4 +24,17 @@ func MapKeys(input map[string]interface{}) []string {
 		keys = append(keys, k)
 	}
 	return keys
+}
+
+// SortedSyncMapKeys -
+func SortedSyncMapKeys(parMap *syncmap.Map) (output []string) {
+
+	parMap.Range(func(key, value interface{}) bool {
+		strkey := fmt.Sprintf("%v", key)
+		output = append(output, strkey)
+		return true
+	})
+
+	sort.Sort(sort.StringSlice(output))
+	return output
 }

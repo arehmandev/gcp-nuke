@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/arehmandev/gcp-nuke/config"
+	"github.com/arehmandev/gcp-nuke/helpers"
 	"golang.org/x/sync/errgroup"
+	"golang.org/x/sync/syncmap"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -14,7 +16,7 @@ import (
 type ComputeInstanceTemplates struct {
 	serviceClient *compute.Service
 	base          ResourceBase
-	resourceMap   map[string]DefaultResourceProperties
+	resourceMap   syncmap.Map
 }
 
 func init() {
@@ -35,16 +37,13 @@ func (c *ComputeInstanceTemplates) Name() string {
 
 // ToSlice - Name of the resourceLister for ComputeInstanceTemplates
 func (c *ComputeInstanceTemplates) ToSlice() (slice []string) {
-	for key := range c.resourceMap {
-		slice = append(slice, key)
-	}
-	return slice
+	return helpers.SortedSyncMapKeys(&c.resourceMap)
+
 }
 
 // Setup - populates the struct
 func (c *ComputeInstanceTemplates) Setup(config config.Config) {
 	c.base.config = config
-	c.resourceMap = make(map[string]DefaultResourceProperties)
 
 }
 
@@ -62,7 +61,7 @@ func (c *ComputeInstanceTemplates) List(refreshCache bool) []string {
 
 	for _, instance := range instanceList.Items {
 		instanceResource := DefaultResourceProperties{}
-		c.resourceMap[instance.Name] = instanceResource
+		c.resourceMap.Store(instance.Name, instanceResource)
 	}
 	return c.ToSlice()
 }
@@ -80,8 +79,8 @@ func (c *ComputeInstanceTemplates) Remove() error {
 	// Removal logic
 	errs, _ := errgroup.WithContext(c.base.config.Context)
 
-	for instanceID := range c.resourceMap {
-		instanceID := instanceID
+	c.resourceMap.Range(func(key, value interface{}) bool {
+		instanceID := key.(string)
 
 		// Parallel instance deletion
 		errs.Go(func() error {
@@ -107,12 +106,13 @@ func (c *ComputeInstanceTemplates) Remove() error {
 					return fmt.Errorf("[Error] Resource deletion timed out for %v [type: %v project: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, c.base.config.Timeout)
 				}
 			}
-			delete(c.resourceMap, instanceID)
+			c.resourceMap.Delete(instanceID)
+
 			log.Printf("[Info] Resource deleted %v [type: %v project: %v] (%v seconds)", instanceID, c.Name(), c.base.config.Project, seconds)
 			return nil
 		})
-
-	}
+		return true
+	})
 	// Wait for all deletions to complete, and return the first non nil error
 	err := errs.Wait()
 	return err
