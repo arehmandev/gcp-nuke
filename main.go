@@ -77,14 +77,14 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 	// Wait for dependencies to delete
 	for _, dependencyResourceName := range resource.Dependencies() {
 		if seconds > timeOut {
-			return fmt.Errorf("[Error] Resource %v timed out whilst waiting for dependency %v to delete. Time waited: %v", resource.Name(), dependencyResourceName, timeOut)
+			return fmt.Errorf("[Error] Resource %v timed out whilst waiting for dependency %v to delete. (%v seconds)", resource.Name(), dependencyResourceName, timeOut)
 		}
 		dependencyResource := resourceMap[dependencyResourceName]
 		if len(dependencyResource.List(false)) != 0 {
 			refreshCache = true
 			time.Sleep(time.Duration(pollTime) * time.Second)
 			seconds += pollTime
-			log.Printf("[Waiting] Resource %v waiting for dependency %v to delete. Time waited: %v\n", resource.Name(), dependencyResource.Name(), seconds)
+			log.Printf("[Waiting] Resource %v waiting for dependency %v to delete. (%v seconds)\n", resource.Name(), dependencyResource.Name(), seconds)
 		} else {
 			break
 		}
@@ -99,10 +99,10 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 	err := resource.Remove()
 
 	// Unfortunately the API seems inconsistent with timings, so retry until any dependent resources delete
-	for err != nil && strings.Contains(err.Error(), "resourceInUseByAnotherResource") {
+	for apiErrorCheck(err) {
 
 		if seconds > timeOut {
-			return fmt.Errorf("[Error] Resource %v timed out whilst trying to delete. Time waited: %v. Details of error below:\n %v", resource.Name(), timeOut, err.Error())
+			return fmt.Errorf("[Error] Resource %v timed out whilst trying to delete. (%v seconds). Details of error below:\n %v", resource.Name(), timeOut, err.Error())
 		}
 
 		log.Printf("[Remove] In use Resource: %v. Items: %v. Waiting before retrying delete. (%v seconds)", resource.Name(), resource.List(false), seconds)
@@ -119,4 +119,17 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 	}
 
 	return err
+}
+
+func apiErrorCheck(err error) bool {
+	if err == nil {
+		return false
+	}
+	errorDescriptors := []string{"resourceInUseByAnotherResource", "resourceNotReady"}
+	for _, errorDesc := range errorDescriptors {
+		if strings.Contains(err.Error(), errorDesc) {
+			return true
+		}
+	}
+	return false
 }

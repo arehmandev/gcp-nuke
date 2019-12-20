@@ -73,7 +73,8 @@ func (c *ComputeInstanceZoneGroups) List(refreshCache bool) []string {
 // Dependencies - Returns a List of resource names to check for
 func (c *ComputeInstanceZoneGroups) Dependencies() []string {
 	a := ComputeZoneAutoScalers{}
-	return []string{a.Name()}
+	b := ContainerGKEClusters{}
+	return []string{a.Name(), b.Name()}
 }
 
 // Remove -

@@ -70,7 +70,8 @@ func (c *ComputeInstanceTemplates) List(refreshCache bool) []string {
 func (c *ComputeInstanceTemplates) Dependencies() []string {
 	a := ComputeInstanceRegionGroups{}
 	b := ComputeInstanceZoneGroups{}
-	return []string{a.Name(), b.Name()}
+	cl := ContainerGKEClusters{}
+	return []string{a.Name(), b.Name(), cl.Name()}
 }
 
 // Remove -
