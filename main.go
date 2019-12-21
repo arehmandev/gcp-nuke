@@ -22,7 +22,7 @@ func main() {
 	config := config.Config{
 		Project:  project,
 		DryRun:   false,
-		Timeout:  300,
+		Timeout:  400,
 		PollTime: 10,
 		Context:  gcp.Ctx,
 		Zones:    gcp.GetZones(gcp.Ctx, project),
@@ -100,6 +100,7 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 
 	// Unfortunately the API seems inconsistent with timings, so retry until any dependent resources delete
 	for apiErrorCheck(err) {
+		resource.List(true)
 
 		if seconds > timeOut {
 			return fmt.Errorf("[Error] Resource %v timed out whilst trying to delete. (%v seconds). Details of error below:\n %v", resource.Name(), timeOut, err.Error())
@@ -109,7 +110,6 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 		time.Sleep(time.Duration(pollTime) * time.Second)
 		seconds += pollTime
 		err = resource.Remove()
-
 	}
 
 	// Add some info to it

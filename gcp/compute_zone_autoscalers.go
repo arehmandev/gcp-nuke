@@ -3,6 +3,7 @@ package gcp
 import (
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/arehmandev/gcp-nuke/config"
@@ -52,6 +53,8 @@ func (c *ComputeZoneAutoScalers) List(refreshCache bool) []string {
 	if !refreshCache {
 		return c.ToSlice()
 	}
+	// Refresh resource map
+	c.resourceMap = sync.Map{}
 	log.Println("[Info] Retrieving list of resources for", c.Name())
 	for _, zone := range c.base.config.Zones {
 		instanceListCall := c.serviceClient.Autoscalers.List(c.base.config.Project, zone)
