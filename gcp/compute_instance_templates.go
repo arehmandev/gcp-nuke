@@ -71,8 +71,8 @@ func (c *ComputeInstanceTemplates) List(refreshCache bool) []string {
 
 // Dependencies - Returns a List of resource names to check for
 func (c *ComputeInstanceTemplates) Dependencies() []string {
-	a := ComputeInstanceRegionGroups{}
-	b := ComputeInstanceZoneGroups{}
+	a := ComputeInstanceGroupsRegion{}
+	b := ComputeInstanceGroupsZone{}
 	cl := ContainerGKEClusters{}
 	return []string{a.Name(), b.Name(), cl.Name()}
 }

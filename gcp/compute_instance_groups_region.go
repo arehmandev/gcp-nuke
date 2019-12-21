@@ -13,8 +13,8 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-// ComputeInstanceRegionGroups -
-type ComputeInstanceRegionGroups struct {
+// ComputeInstanceGroupsRegion -
+type ComputeInstanceGroupsRegion struct {
 	serviceClient *compute.Service
 	base          ResourceBase
 	resourceMap   syncmap.Map
@@ -25,31 +25,31 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	computeResource := ComputeInstanceRegionGroups{
+	computeResource := ComputeInstanceGroupsRegion{
 		serviceClient: computeService,
 	}
 	register(&computeResource)
 }
 
-// Name - Name of the resourceLister for ComputeInstanceRegionGroups
-func (c *ComputeInstanceRegionGroups) Name() string {
-	return "ComputeInstanceRegionGroups"
+// Name - Name of the resourceLister for ComputeInstanceGroupsRegion
+func (c *ComputeInstanceGroupsRegion) Name() string {
+	return "ComputeInstanceGroupsRegion"
 }
 
-// ToSlice - Name of the resourceLister for ComputeInstanceRegionGroups
-func (c *ComputeInstanceRegionGroups) ToSlice() (slice []string) {
+// ToSlice - Name of the resourceLister for ComputeInstanceGroupsRegion
+func (c *ComputeInstanceGroupsRegion) ToSlice() (slice []string) {
 	return helpers.SortedSyncMapKeys(&c.resourceMap)
 
 }
 
 // Setup - populates the struct
-func (c *ComputeInstanceRegionGroups) Setup(config config.Config) {
+func (c *ComputeInstanceGroupsRegion) Setup(config config.Config) {
 	c.base.config = config
 
 }
 
-// List - Returns a list of all ComputeInstanceRegionGroups
-func (c *ComputeInstanceRegionGroups) List(refreshCache bool) []string {
+// List - Returns a list of all ComputeInstanceGroupsRegion
+func (c *ComputeInstanceGroupsRegion) List(refreshCache bool) []string {
 	if !refreshCache {
 		return c.ToSlice()
 	}
@@ -74,13 +74,13 @@ func (c *ComputeInstanceRegionGroups) List(refreshCache bool) []string {
 }
 
 // Dependencies - Returns a List of resource names to check for
-func (c *ComputeInstanceRegionGroups) Dependencies() []string {
+func (c *ComputeInstanceGroupsRegion) Dependencies() []string {
 	a := ComputeRegionAutoScalers{}
 	return []string{a.Name()}
 }
 
 // Remove -
-func (c *ComputeInstanceRegionGroups) Remove() error {
+func (c *ComputeInstanceGroupsRegion) Remove() error {
 
 	// Removal logic
 	errs, _ := errgroup.WithContext(c.base.config.Context)

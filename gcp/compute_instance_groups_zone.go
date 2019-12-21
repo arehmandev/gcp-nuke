@@ -14,8 +14,8 @@ import (
 	"google.golang.org/api/compute/v1"
 )
 
-// ComputeInstanceZoneGroups -
-type ComputeInstanceZoneGroups struct {
+// ComputeInstanceGroupsZone -
+type ComputeInstanceGroupsZone struct {
 	serviceClient *compute.Service
 	// Required to skip gke nodepools
 	gkeInstanceGroups []string
@@ -28,25 +28,25 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	computeResource := ComputeInstanceZoneGroups{
+	computeResource := ComputeInstanceGroupsZone{
 		serviceClient: computeService,
 	}
 	register(&computeResource)
 }
 
-// Name - Name of the resourceLister for ComputeInstanceZoneGroups
-func (c *ComputeInstanceZoneGroups) Name() string {
-	return "ComputeInstanceZoneGroups"
+// Name - Name of the resourceLister for ComputeInstanceGroupsZone
+func (c *ComputeInstanceGroupsZone) Name() string {
+	return "ComputeInstanceGroupsZone"
 }
 
-// ToSlice - Name of the resourceLister for ComputeInstanceZoneGroups
-func (c *ComputeInstanceZoneGroups) ToSlice() (slice []string) {
+// ToSlice - Name of the resourceLister for ComputeInstanceGroupsZone
+func (c *ComputeInstanceGroupsZone) ToSlice() (slice []string) {
 	return helpers.SortedSyncMapKeys(&c.resourceMap)
 
 }
 
 // Setup - populates the struct
-func (c *ComputeInstanceZoneGroups) Setup(config config.Config) {
+func (c *ComputeInstanceGroupsZone) Setup(config config.Config) {
 	c.base.config = config
 
 	// Get the node pool list with some reflection rather than re-instantiating
@@ -58,8 +58,8 @@ func (c *ComputeInstanceZoneGroups) Setup(config config.Config) {
 	c.gkeInstanceGroups = gkeInstance.InstanceGroups
 }
 
-// List - Returns a list of all ComputeInstanceZoneGroups
-func (c *ComputeInstanceZoneGroups) List(refreshCache bool) []string {
+// List - Returns a list of all ComputeInstanceGroupsZone
+func (c *ComputeInstanceGroupsZone) List(refreshCache bool) []string {
 	if !refreshCache {
 		return c.ToSlice()
 	}
@@ -89,13 +89,13 @@ func (c *ComputeInstanceZoneGroups) List(refreshCache bool) []string {
 }
 
 // Dependencies - Returns a List of resource names to check for
-func (c *ComputeInstanceZoneGroups) Dependencies() []string {
+func (c *ComputeInstanceGroupsZone) Dependencies() []string {
 	a := ComputeZoneAutoScalers{}
 	return []string{a.Name()}
 }
 
 // Remove -
-func (c *ComputeInstanceZoneGroups) Remove() error {
+func (c *ComputeInstanceGroupsZone) Remove() error {
 
 	// Removal logic
 	errs, _ := errgroup.WithContext(c.base.config.Context)
