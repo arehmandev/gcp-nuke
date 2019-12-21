@@ -3,6 +3,7 @@ package gcp
 import (
 	"fmt"
 	"log"
+	"reflect"
 	"sync"
 	"time"
 
@@ -16,8 +17,10 @@ import (
 // ComputeInstanceZoneGroups -
 type ComputeInstanceZoneGroups struct {
 	serviceClient *compute.Service
-	base          ResourceBase
-	resourceMap   syncmap.Map
+	// Required to skip gke nodepools
+	gkeInstanceGroups []string
+	base              ResourceBase
+	resourceMap       syncmap.Map
 }
 
 func init() {
@@ -46,6 +49,13 @@ func (c *ComputeInstanceZoneGroups) ToSlice() (slice []string) {
 func (c *ComputeInstanceZoneGroups) Setup(config config.Config) {
 	c.base.config = config
 
+	// Get the node pool list with some reflection rather than re-instantiating
+	a := ContainerGKEClusters{}
+	gkeResource := resourceMap[a.Name()]
+	gkeInstance := reflect.ValueOf(gkeResource).Elem().Addr().Interface().(*ContainerGKEClusters)
+	gkeInstance.Setup(config)
+	gkeInstance.List(true)
+	c.gkeInstanceGroups = gkeInstance.InstanceGroups
 }
 
 // List - Returns a list of all ComputeInstanceZoneGroups
@@ -64,6 +74,11 @@ func (c *ComputeInstanceZoneGroups) List(refreshCache bool) []string {
 		}
 
 		for _, instance := range instanceList.Items {
+
+			if !helpers.SliceContains(c.gkeInstanceGroups, instance.Name) {
+				continue
+			}
+
 			instanceResource := DefaultResourceProperties{
 				zone: zone,
 			}
@@ -76,8 +91,7 @@ func (c *ComputeInstanceZoneGroups) List(refreshCache bool) []string {
 // Dependencies - Returns a List of resource names to check for
 func (c *ComputeInstanceZoneGroups) Dependencies() []string {
 	a := ComputeZoneAutoScalers{}
-	b := ContainerGKEClusters{}
-	return []string{a.Name(), b.Name()}
+	return []string{a.Name()}
 }
 
 // Remove -

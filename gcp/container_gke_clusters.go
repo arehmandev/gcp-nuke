@@ -16,9 +16,10 @@ import (
 
 // ContainerGKEClusters -
 type ContainerGKEClusters struct {
-	serviceClient *container.Service
-	base          ResourceBase
-	resourceMap   syncmap.Map
+	serviceClient  *container.Service
+	base           ResourceBase
+	resourceMap    syncmap.Map
+	InstanceGroups []string
 }
 
 func init() {
@@ -64,6 +65,7 @@ func (c *ContainerGKEClusters) List(refreshCache bool) []string {
 	}
 
 	for _, instance := range instanceList.Clusters {
+		c.appendInstanceGroups(instance.Name, instance.Location)
 		instanceResource := DefaultResourceProperties{}
 		clusterLink := extractGKESelfLink(instance.SelfLink)
 		c.resourceMap.Store(clusterLink, instanceResource)
@@ -120,4 +122,20 @@ func (c *ContainerGKEClusters) Remove() error {
 	// Wait for all deletions to complete, and return the first non nil error
 	err := errs.Wait()
 	return err
+}
+
+// appendInstanceGroups - keep track of instance groups - this is used by compute_instance_zone_groups to exclude any gke nodepools
+func (c *ContainerGKEClusters) appendInstanceGroups(clusterName, clusterLocation string) {
+	parentLocation := fmt.Sprintf("projects/%v/locations/%v/clusters/%v", c.base.config.Project, clusterLocation, clusterName)
+	nodePoolCall := c.serviceClient.Projects.Locations.Clusters.NodePools.List(parentLocation)
+	nodePools, err := nodePoolCall.Do()
+	if err != nil {
+		log.Fatal((err))
+	}
+	for _, nodePool := range nodePools.NodePools {
+		for _, instanceGroupURL := range nodePool.InstanceGroupUrls {
+			instanceGroupName := strings.Split(instanceGroupURL, "/instanceGroupManagers/")[1]
+			c.InstanceGroups = append(c.InstanceGroups, instanceGroupName)
+		}
+	}
 }

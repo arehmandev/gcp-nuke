@@ -76,8 +76,7 @@ func (c *ComputeInstanceRegionGroups) List(refreshCache bool) []string {
 // Dependencies - Returns a List of resource names to check for
 func (c *ComputeInstanceRegionGroups) Dependencies() []string {
 	a := ComputeRegionAutoScalers{}
-	b := ContainerGKEClusters{}
-	return []string{a.Name(), b.Name()}
+	return []string{a.Name()}
 }
 
 // Remove -
