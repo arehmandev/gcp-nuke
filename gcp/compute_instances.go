@@ -3,6 +3,7 @@ package gcp
 import (
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -55,7 +56,7 @@ func (c *ComputeInstances) List(refreshCache bool) []string {
 	}
 	// Refresh resource map
 	c.resourceMap = sync.Map{}
-	log.Println("[Info] Retrieving list of resources for", c.Name())
+
 	for _, zone := range c.base.config.Zones {
 		instanceListCall := c.serviceClient.Instances.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()
@@ -64,6 +65,17 @@ func (c *ComputeInstances) List(refreshCache bool) []string {
 		}
 
 		for _, instance := range instanceList.Items {
+			skipInstance := false
+			// Skip any managed by instance groups
+			for _, item := range instance.Metadata.Items {
+				if item.Key == "created-by" && strings.Contains(*item.Value, "/instanceGroupManagers/") {
+					skipInstance = true
+				}
+			}
+			if skipInstance {
+				continue
+			}
+
 			instanceResource := DefaultResourceProperties{
 				zone: zone,
 			}
@@ -75,13 +87,7 @@ func (c *ComputeInstances) List(refreshCache bool) []string {
 
 // Dependencies - Returns a List of resource names to check for
 func (c *ComputeInstances) Dependencies() []string {
-	b := ComputeInstanceZoneGroups{}
-	d := ComputeInstanceRegionGroups{}
-
-	return []string{
-		b.Name(),
-		d.Name(),
-	}
+	return []string{}
 }
 
 // Remove -

@@ -41,6 +41,7 @@ func removeProject(config config.Config) {
 	for _, resource := range resourceMap {
 		resource := resource
 		errs.Go(func() error {
+			log.Println("[Info] Retrieving list of resources for", resource.Name())
 			resource.List(true)
 			if config.DryRun {
 				parallelDryRun(resourceMap, resource, config)
@@ -80,7 +81,7 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 			return fmt.Errorf("[Error] Resource %v timed out whilst waiting for dependency %v to delete. (%v seconds)", resource.Name(), dependencyResourceName, timeOut)
 		}
 		dependencyResource := resourceMap[dependencyResourceName]
-		if len(dependencyResource.List(false)) != 0 {
+		if len(dependencyResource.List(true)) != 0 {
 			refreshCache = true
 			time.Sleep(time.Duration(pollTime) * time.Second)
 			seconds += pollTime
@@ -112,7 +113,7 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 		err = resource.Remove()
 	}
 
-	// Add some info to it
+	// Add some info to the error
 	if err != nil {
 		detailedError := fmt.Errorf("[Error] Resource: %v. Items: %v. Details of error below:\n %v", resource.Name(), resource.List(false), err.Error())
 		err = detailedError
@@ -121,11 +122,17 @@ func parallelResourceDeletion(resourceMap map[string]gcp.Resource, resource gcp.
 	return err
 }
 
+// apiErrorCheck - Not proud of this workaround for the inconsistent api timings, suggestions welcome
 func apiErrorCheck(err error) bool {
 	if err == nil {
 		return false
 	}
-	errorDescriptors := []string{"resourceInUseByAnotherResource", "resourceNotReady"}
+	errorDescriptors := []string{
+		"resourceInUseByAnotherResource",
+		"resourceNotReady",
+		// Interestingly in the case of instancegroups managed by GKE, listing them after deletion can often give back a ghost list
+		"googleapi: Error 404",
+	}
 	for _, errorDesc := range errorDescriptors {
 		if strings.Contains(err.Error(), errorDesc) {
 			return true

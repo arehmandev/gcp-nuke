@@ -56,7 +56,7 @@ func (c *ContainerGKEClusters) List(refreshCache bool) []string {
 	}
 	// Refresh resource map
 	c.resourceMap = sync.Map{}
-	log.Println("[Info] Retrieving list of resources for", c.Name())
+
 	instanceListCall := c.serviceClient.Projects.Locations.Clusters.List(fmt.Sprintf("projects/%v/locations/-", c.base.config.Project))
 	instanceList, err := instanceListCall.Do()
 	if err != nil {

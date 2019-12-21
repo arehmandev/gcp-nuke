@@ -55,7 +55,7 @@ func (c *ComputeDisks) List(refreshCache bool) []string {
 	}
 	// Refresh resource map
 	c.resourceMap = sync.Map{}
-	log.Println("[Info] Retrieving list of resources for", c.Name())
+
 	for _, zone := range c.base.config.Zones {
 		instanceListCall := c.serviceClient.Disks.List(c.base.config.Project, zone)
 		instanceList, err := instanceListCall.Do()
