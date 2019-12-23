@@ -1,8 +1,7 @@
 # Gcp-Nuke
 
-![Nukedown](https://github.com/arehmandev/gcp-nuke/nuclear.png)
-
-Beware, only members and personnel of Area 51 are allowed past this point.
+**Beware, only members and personnel of Area 51 are allowed past this point.**
+<img src="https://github.com/arehmandev/gcp-nuke/blob/master/nuclear.png?raw=true" height="250" width="250">
 
 ## Background
 
@@ -43,7 +42,9 @@ GLOBAL OPTIONS:
 ```
 
 ## Roadmap
-
+- Add removal of VPC, subnets, CloudDNS resources and SharedVPC associations
+- Add option to cleanup peerings at connecting projects
 - Add unit tests and create a pipeline for robust integration test cases
 - DRY - unfortunately due to the lack of generics in Go, I feel much of the code feels replicated among resources, lets come up with a solution
 - More reliable Dependencies and errors - Currently each resource can supply a list of dependent resources to remove first, however this always work as planned,
+- Add contributing guide
