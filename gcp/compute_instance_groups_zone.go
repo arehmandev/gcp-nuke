@@ -75,7 +75,7 @@ func (c *ComputeInstanceGroupsZone) List(refreshCache bool) []string {
 
 		for _, instance := range instanceList.Items {
 
-			if !helpers.SliceContains(c.gkeInstanceGroups, instance.Name) {
+			if helpers.SliceContains(c.gkeInstanceGroups, instance.Name) {
 				continue
 			}
 
