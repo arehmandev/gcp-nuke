@@ -23,7 +23,7 @@ Additionally, I've found Terraform destroy of some of my colleagues' wizard leve
 
 ```
 NAME:
-   gcp-nuke - A new cli application
+   gcp-nuke - The GCP project cleanup tool with added radiation
 
 USAGE:
    e.g. gcp-nuke --project test-nuke-123456 --dryrun
