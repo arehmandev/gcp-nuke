@@ -35,7 +35,7 @@ COMMANDS:
    help, h  Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --project value   GCP project id to nuke (default: "project")
+   --project value   GCP project id to nuke
    --dryrun          Perform a dryrun instead (default: false)
    --timeout value   Timeout for removal of a single resource in seconds (default: 400)
    --polltime value  Time for polling resource deletion status in seconds (default: 10)
