@@ -13,6 +13,7 @@ import (
 func Command() {
 
 	app := &cli.App{
+		Usage:     "The GCP project cleanup tool with added radiation",
 		Version:   "v0.1.0",
 		UsageText: "e.g. gcp-nuke --project test-nuke-262510 --dryrun",
 		Flags: []cli.Flag{
@@ -48,7 +49,7 @@ func Command() {
 				Zones:    gcp.GetZones(gcp.Ctx, c.String("project")),
 				Regions:  gcp.GetRegions(gcp.Ctx, c.String("project")),
 			}
-			log.Printf("[Info] Timeout %v seconds. Polltime %v seconds. Dry run :%v", config.Timeout, config.PollTime, config.DryRun)
+			log.Printf("[Info] Timeout %v seconds. Polltime %v seconds. Dry run: %v", config.Timeout, config.PollTime, config.DryRun)
 			gcp.RemoveProject(config)
 
 			return nil
