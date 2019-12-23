@@ -19,7 +19,7 @@ func Command() {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:     "project, p",
-				Usage:    "GCP project id to nuke",
+				Usage:    "GCP project id to nuke (required)",
 				Required: true,
 			},
 			&cli.BoolFlag{
