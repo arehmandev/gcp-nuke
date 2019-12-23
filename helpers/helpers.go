@@ -2,7 +2,10 @@ package helpers
 
 import (
 	"fmt"
+	"os"
+	"os/signal"
 	"sort"
+	"syscall"
 
 	"golang.org/x/sync/syncmap"
 )
@@ -37,4 +40,15 @@ func SortedSyncMapKeys(parMap *syncmap.Map) (output []string) {
 
 	sort.Sort(sort.StringSlice(output))
 	return output
+}
+
+// SetupCloseHandler - allows manual termination
+func SetupCloseHandler() {
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		fmt.Println("\r- Ctrl+C pressed in Terminal - premature termination")
+		os.Exit(1)
+	}()
 }

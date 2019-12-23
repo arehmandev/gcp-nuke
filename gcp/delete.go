@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/arehmandev/gcp-nuke/config"
+	"github.com/arehmandev/gcp-nuke/helpers"
 	"golang.org/x/sync/errgroup"
 )
 
 // RemoveProject  -
 func RemoveProject(config config.Config) {
+	helpers.SetupCloseHandler()
 	resourceMap := GetResourceMap(config)
 
 	// Parallel deletion
