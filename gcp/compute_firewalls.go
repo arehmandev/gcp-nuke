@@ -63,8 +63,7 @@ func (c *ComputeFirewalls) List(refreshCache bool) []string {
 	}
 
 	for _, firewall := range firewallList.Items {
-
-		c.resourceMap.Store(firewall.Name, firewall.Name)
+		c.resourceMap.Store(firewall.Name, nil)
 	}
 	return c.ToSlice()
 }
@@ -85,7 +84,6 @@ func (c *ComputeFirewalls) Remove() error {
 
 	c.resourceMap.Range(func(key, value interface{}) bool {
 		firewallID := key.(string)
-		zone := value.(DefaultResourceProperties).zone
 
 		// Parallel firewall deletion
 		errs.Go(func() error {
@@ -97,9 +95,9 @@ func (c *ComputeFirewalls) Remove() error {
 			var opStatus string
 			seconds := 0
 			for opStatus != "DONE" {
-				log.Printf("[Info] Resource currently being deleted %v [type: %v project: %v zone: %v] (%v seconds)", firewallID, c.Name(), c.base.config.Project, zone, seconds)
+				log.Printf("[Info] Resource currently being deleted %v [type: %v project: %v] (%v seconds)", firewallID, c.Name(), c.base.config.Project, seconds)
 
-				operationCall := c.serviceClient.ZoneOperations.Get(c.base.config.Project, zone, operation.Name)
+				operationCall := c.serviceClient.GlobalOperations.Get(c.base.config.Project, operation.Name)
 				checkOpp, err := operationCall.Do()
 				if err != nil {
 					return err
@@ -109,12 +107,12 @@ func (c *ComputeFirewalls) Remove() error {
 				time.Sleep(time.Duration(c.base.config.PollTime) * time.Second)
 				seconds += c.base.config.PollTime
 				if seconds > c.base.config.Timeout {
-					return fmt.Errorf("[Error] Resource deletion timed out for %v [type: %v project: %v zone: %v] (%v seconds)", firewallID, c.Name(), c.base.config.Project, zone, c.base.config.Timeout)
+					return fmt.Errorf("[Error] Resource deletion timed out for %v [type: %v project: %v] (%v seconds)", firewallID, c.Name(), c.base.config.Project, c.base.config.Timeout)
 				}
 			}
 			c.resourceMap.Delete(firewallID)
 
-			log.Printf("[Info] Resource deleted %v [type: %v project: %v zone: %v] (%v seconds)", firewallID, c.Name(), c.base.config.Project, zone, seconds)
+			log.Printf("[Info] Resource deleted %v [type: %v project: %v] (%v seconds)", firewallID, c.Name(), c.base.config.Project, seconds)
 			return nil
 		})
 		return true
