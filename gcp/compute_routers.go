@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/arehmandev/gcp-nuke/config"
-	"github.com/arehmandev/gcp-nuke/helpers"
+	"github.com/BESTSELLER/gcp-nuke/config"
+	"github.com/BESTSELLER/gcp-nuke/helpers"
 	"golang.org/x/sync/errgroup"
 	"golang.org/x/sync/syncmap"
 	"google.golang.org/api/compute/v1"

@@ -3,7 +3,7 @@ package gcp
 import (
 	"log"
 
-	"github.com/arehmandev/gcp-nuke/config"
+	"github.com/BESTSELLER/gcp-nuke/config"
 )
 
 func parallelDryRun(resourceMap map[string]Resource, resource Resource, config config.Config) {
